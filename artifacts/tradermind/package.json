@@ -128,10 +128,8 @@
     "zustand": "^5.0.14"
   },
 "build": {
-  "appId": "com.traderforge.app",
-  "productName": "Trader Forge",
-  "executableName": "TraderForge",
-  "desktopName": "TraderForge",
+  "appId": "com.tradermind.app",
+  "productName": "TraderMind",
   "directories": {
     "output": "release"
   },
@@ -140,15 +138,21 @@
     "electron/**/*",
     "package.json"
   ],
-         "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ]
-    }
+  "asar": true,
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ]
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true
   }
 }
