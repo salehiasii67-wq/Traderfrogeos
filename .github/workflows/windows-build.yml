@@ -36,9 +36,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Fix Rollup Windows binary
+      - name: Fix Windows native packages
         working-directory: artifacts/tradermind
-        run: pnpm add -D @rollup/rollup-win32-x64-msvc
+        run: |
+          pnpm add -D @rollup/rollup-win32-x64-msvc
+          pnpm add -D lightningcss-win32-x64-msvc
 
       - name: Build Windows App
         working-directory: artifacts/tradermind
