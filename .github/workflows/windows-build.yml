@@ -36,6 +36,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
+      - name: Fix Rollup Windows binary
+        working-directory: artifacts/tradermind
+        run: pnpm add -D @rollup/rollup-win32-x64-msvc
+
       - name: Build Windows App
         working-directory: artifacts/tradermind
         run: pnpm electron:build
