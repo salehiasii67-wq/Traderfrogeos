@@ -11,7 +11,7 @@ permissions:
 jobs:
   windows-build:
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
 
     steps:
       - name: Checkout
@@ -20,7 +20,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
+          cache: pnpm
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -28,7 +29,9 @@ jobs:
           version: 10.15.1
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: |
+          pnpm install --no-frozen-lockfile
+          pnpm rebuild
 
       - name: Build Windows App
         working-directory: artifacts/tradermind
