@@ -25,6 +25,8 @@ import {
   Camera,
   Lightbulb,
   HeartPulse,
+  CreditCard,
+  Box,
 } from "lucide-react";
 
 import { cn } from "../lib/utils";
@@ -172,6 +174,16 @@ export function Sidebar() {
           href: "/journal/insights",
           icon: Lightbulb,
           label: "نکات معاملاتی",
+        },
+        {
+          href: "/accounts",
+          icon: CreditCard,
+          label: "حساب‌های معاملاتی",
+        },
+        {
+          href: "/trading-boxes",
+          icon: Box,
+          label: "باکس‌های معاملاتی",
         },
       ],
     },

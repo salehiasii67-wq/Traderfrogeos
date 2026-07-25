@@ -1,9 +1,10 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
+import { toast } from 'sonner';
 
 import { ThemeProvider } from './components/ThemeProvider';
 import { Layout } from './components/Layout';
@@ -50,6 +51,8 @@ const ScreenshotIntelligence = lazy(() => import('./pages/ScreenshotIntelligence
 const AdvancedAnalytics      = lazy(() => import('./pages/AdvancedAnalytics'));
 const TradeInsights          = lazy(() => import('./pages/TradeInsights'));
 const TradingPsychology      = lazy(() => import('./pages/TradingPsychology'));
+const Accounts               = lazy(() => import('./pages/Accounts'));
+const TradingBoxes           = lazy(() => import('./pages/TradingBoxes'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -185,6 +188,9 @@ function Router() {
           <Route path="/analytics/psychology" component={TradingPsychology} />
           <Route path="/screenshots" component={ScreenshotIntelligence} />
 
+          <Route path="/accounts" component={Accounts} />
+          <Route path="/trading-boxes" component={TradingBoxes} />
+
           <Route path="/backup" component={BackupRestore} />
           <Route path="/settings" component={Settings} />
 
@@ -199,6 +205,37 @@ function Router() {
   );
 }
 
+// ── جلوگیری از خروج ناخواسته PWA با دکمه برگشت ──────────
+function BackButtonGuard() {
+  const exitPendingRef = useRef(false);
+
+  useEffect(() => {
+    // یک ورودی اضافه در تاریخچه ایجاد می‌کنیم تا همیشه یک «پشتوانه» وجود داشته باشد
+    const sentinelUrl = window.location.href;
+    window.history.replaceState({ __tmSentinel: true }, '', sentinelUrl);
+    window.history.pushState({ __tmEntry: true }, '', sentinelUrl);
+
+    const onPopState = (e: PopStateEvent) => {
+      if (e.state?.__tmSentinel) {
+        // به پایین ترین لایه تاریخچه رسیدیم — از خروج جلوگیری می‌کنیم
+        window.history.pushState({ __tmEntry: true }, '', window.location.href);
+
+        if (!exitPendingRef.current) {
+          exitPendingRef.current = true;
+          toast('برای خروج دوباره برگشت را بزنید', { duration: 2000 });
+          setTimeout(() => { exitPendingRef.current = false; }, 2000);
+        }
+      }
+      // در غیر این صورت wouter خودش مسیریابی را مدیریت می‌کند
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  return null;
+}
+
 // ── محتوای اصلی با بررسی قفل ─────────────────────────────
 function AppContent() {
   const { isEnabled, isLocked } = useSecurityStore();
@@ -209,6 +246,7 @@ function AppContent() {
 
   return (
     <>
+      <BackButtonGuard />
       <AutoLockManager />
       {/* اگر قفل فعال و بسته باشد، صفحه قفل نمایش داده می‌شود */}
       {isEnabled && isLocked && <LockScreen />}

@@ -61,6 +61,8 @@ export interface Trade {
   id: string;
   sessionId: string | null;
   strategyId: string | null;
+  accountId: string | null;   // حساب معاملاتی
+  boxId: string | null;        // باکس معاملاتی
   symbol: string;
   market: string | null;
   direction: 'long' | 'short';
@@ -876,6 +878,36 @@ export interface ScreenshotCollection {
   updatedAt: number;
 }
 
+/** ── Account (حساب معاملاتی) ─────────────────────────────────────── */
+
+export interface Account {
+  id: string;
+  name: string;               // مثلاً «حساب اصلی» یا «دمو بروکر XYZ»
+  broker: string;             // نام بروکر (اختیاری)
+  currency: string;           // USD, EUR, ...
+  initialBalance: number | null;
+  currentBalance: number | null;
+  color: string;              // رنگ شناسه‌ای
+  isDefault: boolean;
+  notes: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** ── TradingBox (باکس معاملاتی) ──────────────────────────────────── */
+
+export interface TradingBox {
+  id: string;
+  name: string;               // مثلاً «باکس ۱» یا «آزمون استراتژی بهار»
+  description: string | null;
+  targetTradeCount: number | null;  // هدف تعداد معاملات
+  color: string;
+  status: 'active' | 'completed' | 'archived';
+  notes: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
 /** ── Dexie Database ──────────────────────────────────────────────── */
 
 class TraderMindDB extends Dexie {
@@ -914,6 +946,9 @@ class TraderMindDB extends Dexie {
   screenshotGroups!: Table<ScreenshotGroup>;
   visualPatterns!: Table<VisualPattern>;
   screenshotCollections!: Table<ScreenshotCollection>;
+  // v18 — حساب‌ها و باکس‌های معاملاتی
+  accounts!: Table<Account>;
+  tradingBoxes!: Table<TradingBox>;
 
   constructor() {
     super('TraderMindDB');
@@ -1176,6 +1211,43 @@ class TraderMindDB extends Dexie {
       for (const col of defaults) {
         await tx.table('screenshotCollections').put(col);
       }
+    });
+
+    // نسخه ۱۸: حساب‌های معاملاتی + باکس‌های معاملاتی + فیلدهای accountId/boxId در Trade
+    this.version(18).stores({
+      ...baseStores,
+      symbolProfiles: 'id, symbol, assetClass',
+      learningAuditTrail: 'id, tradeId, type, createdAt',
+      profileSnapshots: 'id, createdAt',
+      profileCorrections: 'id, correctedAt',
+      knowledgeNotes: 'id, category, importance, source, status, isActive, isPinned, isRule, createdAt, updatedAt, lastReviewedAt',
+      knowledgeCategories: 'id, name, isDefault, createdAt',
+      replayDatasets: 'id, symbol, timeframe, type, sourceTradeId, createdAt',
+      replaySessions: 'id, mode, status, symbol, datasetId, sourceTradeId, playlistId, createdAt',
+      replayDecisions: 'id, sessionId, step, action, createdAt',
+      replayPlaylists: 'id, name, createdAt',
+      marketContextSessions: 'id, symbol, status, session, dayOfWeek, setupType, linkedTradeId, createdAt',
+      tradeEvents: 'id, tradeId, eventType, timestamp, createdAt',
+      tradeVersions: 'id, tradeId, changedAt',
+      riskProfiles: 'id',
+      riskViolations: 'id, tradeId, date, createdAt',
+      riskGroups: 'id, name, createdAt',
+      performanceReviews: 'id, periodKey, periodType, createdAt',
+      preTradeChecklists: 'id, isDefault, contextSymbol, contextSession, contextSetup, createdAt',
+      dailyFocus: 'id, date, createdAt',
+      chartScreenshots: 'id, symbol, timeframe, session, screenshotType, tradeId, groupId, date, createdAt',
+      screenshotGroups: 'id, symbol, tradeId, date, createdAt',
+      visualPatterns: 'id, name, createdAt',
+      screenshotCollections: 'id, name, isDefault, createdAt',
+      // جداول جدید v18
+      accounts: 'id, name, isDefault, createdAt',
+      tradingBoxes: 'id, name, status, createdAt',
+    }).upgrade(tx => {
+      // فیلدهای جدید به معاملات موجود اضافه می‌شوند
+      return tx.table('trades').toCollection().modify((trade: Trade) => {
+        if (trade.accountId === undefined) trade.accountId = null;
+        if (trade.boxId === undefined) trade.boxId = null;
+      });
     });
   }
 }

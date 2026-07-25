@@ -3,14 +3,17 @@ import { Link, useLocation } from "wouter";
 import { tradeService } from "../services/tradeService";
 import { analysisService } from "../services/analysisService";
 import { strategyService } from "../services/strategyService";
-import { db, Trade, Strategy, AnalysisSession } from "../db/database";
+import { accountService } from "../services/accountService";
+import { tradingBoxService } from "../services/tradingBoxService";
+import { db, Trade, Strategy, AnalysisSession, Account, TradingBox } from "../db/database";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { ArrowLeft, Save, Eye, Plus, X, Image as ImageIcon, Zap, BookOpen, ChevronDown, ChevronUp, CheckSquare, Square } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
+import { ArrowLeft, Save, Eye, Plus, X, Image as ImageIcon, Zap, BookOpen, ChevronDown, ChevronUp, CheckSquare, Square, CreditCard, Box } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "../components/ui/progress";
 import { format } from "date-fns";
@@ -51,9 +54,14 @@ export default function NewTrade() {
   const [allTrades, setAllTrades] = useState<Trade[]>([]);
   const [isQuickMode, setIsQuickMode] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [tradingBoxes, setTradingBoxes] = useState<TradingBox[]>([]);
+  const [leaveDialog, setLeaveDialog] = useState<{ show: boolean; resolve?: (leave: boolean) => void }>({ show: false });
 
   useEffect(() => {
     db.trades.toArray().then(setAllTrades);
+    accountService.getAll().then(setAccounts);
+    tradingBoxService.getAll().then(setTradingBoxes);
   }, []);
 
   // بررسی معامله تکراری
@@ -156,7 +164,7 @@ export default function NewTrade() {
   }, [trade, saveTrade]);
 
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    const handleBeforeUnload = () => {
       if (trade && JSON.stringify(trade) !== JSON.stringify(lastSavedRef.current)) {
         tradeService.updateTrade(trade.id, trade);
       }
@@ -164,6 +172,41 @@ export default function NewTrade() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [trade]);
+
+  // هشدار هنگام فشردن دکمه برگشت با داده‌های ذخیره‌نشده
+  useEffect(() => {
+    const onPopState = async () => {
+      if (!trade || JSON.stringify(trade) === JSON.stringify(lastSavedRef.current)) return;
+      // داده‌های ذخیره‌نشده وجود دارد
+      const shouldLeave = await new Promise<boolean>(resolve => {
+        setLeaveDialog({ show: true, resolve });
+      });
+      if (!shouldLeave) {
+        // برگشت به صفحه — از خروج جلوگیری می‌کنیم
+        window.history.pushState(null, '', window.location.href);
+      } else {
+        // ذخیره سریع و خروج
+        await tradeService.updateTrade(trade.id, trade);
+        setLocation('/journal/trades');
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [trade, setLocation]);
+
+  const handleLeaveDialogConfirm = (leave: boolean) => {
+    setLeaveDialog(prev => {
+      prev.resolve?.(leave);
+      return { show: false };
+    });
+  };
+
+  const handleCancel = async () => {
+    if (trade && JSON.stringify(trade) !== JSON.stringify(lastSavedRef.current)) {
+      await tradeService.updateTrade(trade.id, trade);
+    }
+    setLocation('/journal/trades');
+  };
 
   const handleDateChange = (field: 'openedAt' | 'closedAt', dateString: string) => {
     const timestamp = new Date(dateString).getTime();
@@ -249,8 +292,8 @@ export default function NewTrade() {
               <BookOpen className="w-3.5 h-3.5" /> کامل
             </Button>
           </div>
-          <Button className="order-1 flex-1 sm:order-none sm:flex-none" variant="outline" onClick={() => setLocation('/journal/trades')}>Cancel</Button>
-          <Button className="order-2 flex-1 whitespace-nowrap sm:order-none sm:flex-none" onClick={() => setLocation(`/journal/trades/${trade.id}`)}>
+          <Button className="order-1 flex-1 sm:order-none sm:flex-none" variant="outline" onClick={handleCancel}>Cancel</Button>
+          <Button className="order-2 flex-1 whitespace-nowrap sm:order-none sm:flex-none" onClick={async () => { if (trade) { await tradeService.updateTrade(trade.id, trade); } setLocation(`/journal/trades/${trade.id}`); }}>
             <Eye className="w-4 h-4 mr-2" /> Save & View
           </Button>
         </div>
@@ -344,6 +387,58 @@ export default function NewTrade() {
                 <SelectContent>
                   <SelectItem value="none">No Strategy</SelectItem>
                   {strategies.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* حساب معاملاتی */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5"><CreditCard className="w-3.5 h-3.5" /> حساب معاملاتی</Label>
+                <Button variant="ghost" size="sm" className="h-6 text-xs gap-1 px-1.5" onClick={() => window.open('/accounts', '_self')}>
+                  <Plus className="w-3 h-3" /> مدیریت
+                </Button>
+              </div>
+              <Select value={(trade as any).accountId || 'none'} onValueChange={v => handleChange('accountId' as any, v === 'none' ? null : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="انتخاب حساب (اختیاری)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">بدون حساب</SelectItem>
+                  {accounts.map(a => (
+                    <SelectItem key={a.id} value={a.id}>
+                      <span className="flex items-center gap-2">
+                        <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: a.color }} />
+                        {a.name}{a.broker ? ` — ${a.broker}` : ''}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* باکس معاملاتی */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5"><Box className="w-3.5 h-3.5" /> باکس معاملاتی</Label>
+                <Button variant="ghost" size="sm" className="h-6 text-xs gap-1 px-1.5" onClick={() => window.open('/trading-boxes', '_self')}>
+                  <Plus className="w-3 h-3" /> مدیریت
+                </Button>
+              </div>
+              <Select value={(trade as any).boxId || 'none'} onValueChange={v => handleChange('boxId' as any, v === 'none' ? null : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="انتخاب باکس (اختیاری)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">بدون باکس</SelectItem>
+                  {tradingBoxes.filter(b => b.status === 'active').map(b => (
+                    <SelectItem key={b.id} value={b.id}>
+                      <span className="flex items-center gap-2">
+                        <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: b.color }} />
+                        {b.name}
+                      </span>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -838,6 +933,22 @@ export default function NewTrade() {
         </section>)}
 
       </div>
+
+      {/* دیالوگ هشدار داده ذخیره‌نشده */}
+      <Dialog open={leaveDialog.show} onOpenChange={open => !open && handleLeaveDialogConfirm(false)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>تغییرات ذخیره نشده</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            تغییراتی که وارد کردید هنوز ذخیره نشده‌اند. آیا می‌خواهید ذخیره شوند و از این صفحه خارج شوید؟
+          </p>
+          <DialogFooter className="gap-2 flex-col sm:flex-row">
+            <Button variant="outline" onClick={() => handleLeaveDialogConfirm(false)}>بمانید</Button>
+            <Button variant="destructive" onClick={() => handleLeaveDialogConfirm(true)}>ذخیره و خروج</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
