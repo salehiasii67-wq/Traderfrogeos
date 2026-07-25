@@ -7,6 +7,9 @@ import { analysisService } from "../services/analysisService";
 import { tradeService } from "../services/tradeService";
 import { journalService } from "../services/journalService";
 import { backupService } from "../services/backupService";
+import { accountService } from "../services/accountService";
+import { tradingBoxService } from "../services/tradingBoxService";
+import { Account, TradingBox } from "../db/database";
 import { db } from "../db/database";
 import {
   computeAnalytics, filterTradesByRange, getDateRange,
@@ -24,7 +27,7 @@ import {
   ActivitySquare, PenLine, ChevronLeft, TrendingUp, TrendingDown,
   BarChart3, Plus, Clock, CheckCircle2, Zap, BookOpen, FileArchive,
   Lightbulb, Target, LayoutDashboard, AlertCircle, ArrowUpRight,
-  Minus, Shield,
+  Minus, Shield, CreditCard, Box,
 } from "lucide-react";
 import { formatDateFa } from "../lib/i18n";
 import { getByDay, getBySession } from "../services/performanceService";
@@ -171,6 +174,8 @@ export default function Dashboard() {
   });
   const [customTo, setCustomTo] = useState<string>(() => new Date().toISOString().split("T")[0]);
   const [exportingBackup, setExportingBackup] = useState(false);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [tradingBoxes, setTradingBoxes] = useState<TradingBox[]>([]);
   const customFromRef = useRef<HTMLInputElement>(null);
 
   const reload = useCallback(() => {
@@ -178,6 +183,10 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => { reload(); }, [reload]);
+  useEffect(() => {
+    accountService.getAll().then(setAccounts);
+    tradingBoxService.getAll().then(setTradingBoxes);
+  }, []);
 
   // ── Derived: معاملات بازه زمانی انتخابی
   const rangedTrades = useMemo(() => {
@@ -761,6 +770,101 @@ export default function Dashboard() {
               higherIsBetter
               hint="نسبت میانگین برد به میانگین ضرر"
             />
+          </div>
+        </div>
+      )}
+
+      {/* ━━━━━━━━━━━━━━━━ 4c. آمار حساب‌های معاملاتی ━━━━━━━━━━━━━━━━ */}
+      {accounts.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-muted-foreground tracking-wider flex items-center gap-1.5">
+              <CreditCard className="w-3.5 h-3.5" /> حساب‌های معاملاتی
+            </p>
+            <Link href="/accounts" className="text-xs text-primary hover:underline flex items-center gap-0.5">
+              مدیریت <ChevronLeft className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {accounts.map(acc => {
+              const accTrades = (data?.trades ?? []).filter((t: any) => t.accountId === acc.id);
+              const closed = accTrades.filter(t => t.status === 'closed');
+              const wins = closed.filter(t => t.result === 'win' || t.result === 'partial-win');
+              const pnl = closed.reduce((s, t) => s + (t.profitLoss || 0), 0);
+              const winRate = closed.length > 0 ? Math.round((wins.length / closed.length) * 100) : null;
+              return (
+                <Link key={acc.id} href={`/journal/trades?accountId=${acc.id}`}>
+                  <div className="flex items-center gap-3 p-3 rounded-xl border bg-card hover:bg-muted/30 transition-colors cursor-pointer">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: acc.color + '33', border: `2px solid ${acc.color}` }}>
+                      <CreditCard className="w-4 h-4" style={{ color: acc.color }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate">{acc.name}</p>
+                      <p className="text-xs text-muted-foreground">{acc.broker || 'بدون بروکر'} · {accTrades.length} معامله</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className={`text-sm font-bold ${pnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        {pnl >= 0 ? '+' : ''}${pnl.toFixed(0)}
+                      </p>
+                      {winRate !== null && (
+                        <p className="text-xs text-muted-foreground">{winRate}٪ برد</p>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ━━━━━━━━━━━━━━━━ 4d. باکس‌های معاملاتی فعال ━━━━━━━━━━━━━━━━ */}
+      {tradingBoxes.filter(b => b.status === 'active').length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-muted-foreground tracking-wider flex items-center gap-1.5">
+              <Box className="w-3.5 h-3.5" /> باکس‌های معاملاتی فعال
+            </p>
+            <Link href="/trading-boxes" className="text-xs text-primary hover:underline flex items-center gap-0.5">
+              مدیریت <ChevronLeft className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {tradingBoxes.filter(b => b.status === 'active').map(box => {
+              const boxTrades = (data?.trades ?? []).filter((t: any) => t.boxId === box.id);
+              const closed = boxTrades.filter(t => t.status === 'closed');
+              const wins = closed.filter(t => t.result === 'win' || t.result === 'partial-win');
+              const pnl = closed.reduce((s, t) => s + (t.profitLoss || 0), 0);
+              const targetCount = box.targetTradeCount || 0;
+              const progress = targetCount > 0 ? Math.min(100, Math.round((boxTrades.length / targetCount) * 100)) : null;
+              const winRate = closed.length > 0 ? Math.round((wins.length / closed.length) * 100) : null;
+              return (
+                <Link key={box.id} href={`/journal/trades?boxId=${box.id}`}>
+                  <div className="p-3 rounded-xl border bg-card hover:bg-muted/30 transition-colors cursor-pointer space-y-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: box.color + '33', border: `2px solid ${box.color}` }}>
+                        <Box className="w-4 h-4" style={{ color: box.color }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">{box.name}</p>
+                        <p className="text-xs text-muted-foreground">{boxTrades.length}{targetCount > 0 ? `/${targetCount}` : ''} معامله{winRate !== null ? ` · ${winRate}٪ برد` : ''}</p>
+                      </div>
+                      <p className={`text-sm font-bold shrink-0 ${pnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        {pnl >= 0 ? '+' : ''}${pnl.toFixed(0)}
+                      </p>
+                    </div>
+                    {progress !== null && (
+                      <div className="space-y-1">
+                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: box.color }} />
+                        </div>
+                        <p className="text-xs text-muted-foreground text-left">{progress}٪ از هدف</p>
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}

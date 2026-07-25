@@ -1,15 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { Skeleton } from "../components/ui/skeleton";
 import { tradeService } from "../services/tradeService";
 import { strategyService } from "../services/strategyService";
-import { Trade, Strategy } from "../db/database";
+import { accountService } from "../services/accountService";
+import { tradingBoxService } from "../services/tradingBoxService";
+import { Trade, Strategy, Account, TradingBox } from "../db/database";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import {
   PlusCircle, TrendingUp, TrendingDown, Search, Filter,
-  CalendarIcon, ChevronDown, ChevronUp, Upload,
+  CalendarIcon, ChevronDown, ChevronUp, Upload, CreditCard, Box,
 } from "lucide-react";
 import { scoreOneTrade } from "../services/dataQualityService";
 import { format } from "date-fns";
@@ -41,18 +43,33 @@ const ADHERENCE_FA: Record<string, string> = {
 };
 
 export default function TradeJournal() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [strategies, setStrategies] = useState<Strategy[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [tradingBoxes, setTradingBoxes] = useState<TradingBox[]>([]);
   const [stats, setStats] = useState({ total: 0, winRate: 0, totalPnl: 0, avgRMultiple: 0 });
   const [loading, setLoading] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // خواندن پارامترهای URL برای پیش‌فیلتر (مثلاً ?boxId=xxx از صفحه باکس‌ها)
+  const urlParams = useMemo(() => new URLSearchParams(location.includes('?') ? location.split('?')[1] : ''), [location]);
+
   const [filters, setFilters] = useState({
     search: '', result: 'all', direction: 'all', strategyId: 'all',
     emotion: 'all', adherenceRating: 'all', dateFrom: '', dateTo: '',
+    accountId: urlParams.get('accountId') || 'all',
+    boxId: urlParams.get('boxId') || 'all',
   });
 
-  useEffect(() => { strategyService.getAllStrategies().then(setStrategies); }, []);
+  useEffect(() => {
+    strategyService.getAllStrategies().then(setStrategies);
+    accountService.getAll().then(setAccounts);
+    tradingBoxService.getAll().then(setTradingBoxes);
+    // اگر فیلتر URL وجود داشت، پنل فیلتر را باز کن
+    if (urlParams.get('boxId') || urlParams.get('accountId')) setFiltersOpen(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => { loadData(); }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadData = async () => {
@@ -74,10 +91,15 @@ export default function TradeJournal() {
   const handleFilterChange = (key: string, value: string) =>
     setFilters(prev => ({ ...prev, [key]: value }));
 
-  const clearFilters = () => setFilters({
-    search: '', result: 'all', direction: 'all', strategyId: 'all',
-    emotion: 'all', adherenceRating: 'all', dateFrom: '', dateTo: '',
-  });
+  const clearFilters = () => {
+    setFilters({
+      search: '', result: 'all', direction: 'all', strategyId: 'all',
+      emotion: 'all', adherenceRating: 'all', dateFrom: '', dateTo: '',
+      accountId: 'all', boxId: 'all',
+    });
+    // حذف پارامترهای URL
+    setLocation('/journal/trades');
+  };
 
   const activeFiltersCount = Object.values(filters).filter(v => v !== 'all' && v !== '').length;
   const emotions = t.defaultEmotions;
@@ -237,6 +259,54 @@ export default function TradeJournal() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* حساب معاملاتی */}
+            {accounts.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                  <CreditCard className="w-3 h-3" /> حساب معاملاتی
+                </div>
+                <Select value={filters.accountId} onValueChange={v => handleFilterChange('accountId', v)}>
+                  <SelectTrigger className="h-9 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">همه حساب‌ها</SelectItem>
+                    <SelectItem value="none_set">بدون حساب</SelectItem>
+                    {accounts.map(a => (
+                      <SelectItem key={a.id} value={a.id}>
+                        <span className="flex items-center gap-2">
+                          <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: a.color }} />
+                          {a.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* باکس معاملاتی */}
+            {tradingBoxes.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                  <Box className="w-3 h-3" /> باکس معاملاتی
+                </div>
+                <Select value={filters.boxId} onValueChange={v => handleFilterChange('boxId', v)}>
+                  <SelectTrigger className="h-9 bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">همه باکس‌ها</SelectItem>
+                    <SelectItem value="none_set">بدون باکس</SelectItem>
+                    {tradingBoxes.map(b => (
+                      <SelectItem key={b.id} value={b.id}>
+                        <span className="flex items-center gap-2">
+                          <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: b.color }} />
+                          {b.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* از تاریخ */}
             <div className="space-y-1.5">

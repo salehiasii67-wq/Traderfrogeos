@@ -96,6 +96,7 @@ export const tradeService = {
   async getTradesWithFilters(filters: {
     search?: string; result?: string; direction?: string; strategyId?: string;
     emotion?: string; adherenceRating?: string; dateFrom?: number; dateTo?: number;
+    accountId?: string; boxId?: string;
   } = {}) {
     let trades = await db.trades.orderBy('openedAt').reverse().toArray();
     if (filters.search) { const s = filters.search.toLowerCase(); trades = trades.filter(t => t.symbol.toLowerCase().includes(s)); }
@@ -108,6 +109,14 @@ export const tradeService = {
     if (filters.adherenceRating && filters.adherenceRating !== 'all') trades = trades.filter(t => t.adherenceRating === filters.adherenceRating);
     if (filters.dateFrom) trades = trades.filter(t => t.openedAt >= filters.dateFrom!);
     if (filters.dateTo) trades = trades.filter(t => t.openedAt <= filters.dateTo!);
+    if (filters.accountId && filters.accountId !== 'all') {
+      if (filters.accountId === 'none_set') trades = trades.filter(t => !(t as any).accountId);
+      else trades = trades.filter(t => (t as any).accountId === filters.accountId);
+    }
+    if (filters.boxId && filters.boxId !== 'all') {
+      if (filters.boxId === 'none_set') trades = trades.filter(t => !(t as any).boxId);
+      else trades = trades.filter(t => (t as any).boxId === filters.boxId);
+    }
     return trades;
   },
 
