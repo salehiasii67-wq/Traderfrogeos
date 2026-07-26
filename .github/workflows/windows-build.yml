@@ -39,9 +39,9 @@ jobs:
       - name: Install Windows native binaries
         working-directory: artifacts/tradermind
         run: |
-          pnpm add -D @rollup/rollup-win32-x64-msvc
-          pnpm add -D lightningcss-win32-x64-msvc
-          pnpm add -D @tailwindcss/oxide-win32-x64-msvc
+          pnpm add -D @rollup/rollup-win32-x64-msvc --ignore-workspace-root-check
+          pnpm add -D lightningcss-win32-x64-msvc --ignore-workspace-root-check
+          pnpm add -D @tailwindcss/oxide-win32-x64-msvc --ignore-workspace-root-check
 
       - name: Build Windows App
         working-directory: artifacts/tradermind
