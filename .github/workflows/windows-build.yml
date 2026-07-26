@@ -33,6 +33,13 @@ jobs:
           node -v
           pnpm -v
 
+      - name: Remove win32 exclusion overrides for Windows build
+        shell: bash
+        run: |
+          sed -i '/rollup-win32/d' pnpm-workspace.yaml
+          sed -i '/oxide-win32/d' pnpm-workspace.yaml
+          sed -i '/lightningcss-win32/d' pnpm-workspace.yaml
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile --force
 
