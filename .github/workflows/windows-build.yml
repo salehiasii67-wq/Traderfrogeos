@@ -24,7 +24,7 @@ jobs:
           run_install: false
 
       - name: Install Dependencies
-        run: pnpm install --shamefully-hoist
+        run: pnpm install --no-frozen-lockfile --shamefully-hoist
 
       - name: Build App
         run: pnpm --filter tradermind electron:build
