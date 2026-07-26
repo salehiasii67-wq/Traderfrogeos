@@ -1,0 +1,57 @@
+name: Build TraderMind Windows
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup pnpm
+        run: corepack prepare pnpm@10.15.1 --activate
+
+      - name: Check versions
+        run: |
+          node -v
+          pnpm -v
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile --force
+
+      - name: Install Windows native binaries
+        working-directory: artifacts/tradermind
+        run: |
+          pnpm add -D @rollup/rollup-win32-x64-msvc
+          pnpm add -D lightningcss-win32-x64-msvc
+          pnpm add -D @tailwindcss/oxide-win32-x64-msvc
+
+      - name: Build Windows App
+        working-directory: artifacts/tradermind
+        run: pnpm electron:build
+        env:
+          PORT: "23583"
+          BASE_PATH: "/"
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: TraderMind-Windows
+          path: artifacts/tradermind/release/*

@@ -6,30 +6,14 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 
-const rawPort = process.env.PORT;
+// تنظیم پورت به‌صورت اختیاری با مقدار پیش‌فرض ۵۱۷۳ برای الکترون
+const port = process.env.PORT ? Number(process.env.PORT) : 5173;
 
-if (!rawPort) {
-  throw new Error(
-    'PORT environment variable is required but was not provided.',
-  );
-}
-
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    'BASE_PATH environment variable is required but was not provided.',
-  );
-}
+// برای الکترون مسیر باید حتماً relative (./) باشه
+const basePath = process.env.BASE_PATH || './';
 
 export default defineConfig({
-  base: basePath,
+  base: basePath, // تنظیم مسیر نسبی برای لود صحیح فایل‌ها در الکترون
   plugins: [
     react(),
     tailwindcss(),
@@ -46,7 +30,7 @@ export default defineConfig({
         background_color: '#0f172a',
         display: 'standalone',
         orientation: 'portrait-primary',
-        start_url: '/',
+        start_url: './',
         id: 'com.tradermind.app',
         lang: 'fa',
         dir: 'rtl',
@@ -110,15 +94,13 @@ export default defineConfig({
   },
   root: path.resolve(import.meta.dirname),
   esbuild: {
-    // Always strip debugger statements; in production also remove stray console.log/debug/info calls.
-    // console.warn and console.error are preserved (used by logger and ErrorBoundary for real errors).
     drop: ['debugger'],
     ...(process.env.NODE_ENV === 'production'
       ? { pure: ['console.log', 'console.debug', 'console.info'] }
       : {}),
   },
   build: {
-    outDir: path.resolve(import.meta.dirname, 'dist/public'),
+    outDir: path.resolve(import.meta.dirname, 'dist'), // خروجی مستقیم روی dist
     emptyOutDir: true,
     rollupOptions: {
       output: {
