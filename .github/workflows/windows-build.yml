@@ -1,60 +1,30 @@
-name: Build TraderMind Windows
+name: Build Electron App
 
 on:
   push:
-    branches: ["main"]
-  workflow_dispatch:
-
-permissions:
-  contents: read
+    branches: [ main ]
 
 jobs:
-  windows-build:
+  build:
     runs-on: windows-latest
-    timeout-minutes: 30
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup pnpm
-        run: corepack prepare pnpm@10.15.1 --activate
-
-      - name: Check versions
-        run: |
-          node -v
-          pnpm -v
-
-      - name: Remove win32 exclusion overrides for Windows build
-        shell: bash
-        run: |
-          sed -i '/rollup-win32/d' pnpm-workspace.yaml
-          sed -i '/oxide-win32/d' pnpm-workspace.yaml
-          sed -i '/lightningcss-win32/d' pnpm-workspace.yaml
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile --force
-
-      - name: Install Windows native binaries
-        run: pnpm --filter tradermind add -D @rollup/rollup-win32-x64-msvc lightningcss-win32-x64-msvc @tailwindcss/oxide-win32-x64-msvc
-
-      - name: Build Windows App
-        working-directory: artifacts/tradermind
-        run: pnpm electron:build
-        env:
-          PORT: "23583"
-          BASE_PATH: "./"
-
-      - name: Upload Windows Installer
-        uses: actions/upload-artifact@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
         with:
-          name: TraderMind-Windows
-          path: artifacts/tradermind/release/*
+          version: latest
+          run_install: false
+
+      - name: Install Dependencies
+        run: pnpm install --shamefully-hoist
+
+      - name: Build App
+        run: pnpm --filter tradermind electron:build
