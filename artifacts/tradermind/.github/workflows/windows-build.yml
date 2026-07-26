@@ -36,10 +36,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile --force
 
+      - name: Install Windows native binaries
+        run: pnpm --filter tradermind add -D @rollup/rollup-win32-x64-msvc lightningcss-win32-x64-msvc @tailwindcss/oxide-win32-x64-msvc
+
       - name: Verify rollup native binary
-        run: |
-          pnpm list @rollup/rollup-win32-x64-msvc -w || echo "not found, installing explicitly"
-          node -e "try { require('@rollup/rollup-win32-x64-msvc'); console.log('OK: rollup native binary resolved'); } catch(e) { console.log('MISSING:', e.message); }"
+        working-directory: artifacts/tradermind
+        run: node -e "try { require('@rollup/rollup-win32-x64-msvc'); console.log('OK: rollup native binary resolved'); } catch(e) { console.log('MISSING:', e.message); }"
 
       - name: Build Windows App
         working-directory: artifacts/tradermind
