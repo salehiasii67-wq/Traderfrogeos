@@ -1,59 +1,30 @@
-name: Build TraderMind Android APK
+name: Build Electron App
 
 on:
   push:
-    branches: ["main"]
-  workflow_dispatch:
-
-permissions:
-  contents: read
+    branches: [ main ]
 
 jobs:
-  android-build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+  build:
+    runs-on: windows-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.15.1
-
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
-          cache: pnpm
+          node-version: 22
 
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Build TraderMind
-        working-directory: artifacts/tradermind
-        run: pnpm build
-        env:
-          PORT: "23583"
-          BASE_PATH: "/"
-
-      - name: Capacitor Sync
-        working-directory: artifacts/tradermind
-        run: npx cap sync android
-
-      - name: Build APK
-        working-directory: artifacts/tradermind/android
-        run: ./gradlew assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
         with:
-          name: TraderMind-debug-apk
-          path: artifacts/tradermind/android/app/build/outputs/apk/debug/app-debug.apk
+          version: latest
+          run_install: false
+
+      - name: Install Dependencies
+        run: pnpm install --shamefully-hoist
+
+      - name: Build App
+        run: pnpm --filter tradermind electron:build
