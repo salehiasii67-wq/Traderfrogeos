@@ -48,7 +48,7 @@ jobs:
         run: pnpm electron:build
         env:
           PORT: "23583"
-          BASE_PATH: "/"
+          BASE_PATH: "./"
 
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
