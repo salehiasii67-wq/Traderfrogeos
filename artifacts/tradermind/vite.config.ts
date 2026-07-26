@@ -4,8 +4,6 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
-
 // تنظیم پورت به‌صورت اختیاری با مقدار پیش‌فرض ۵۱۷۳ برای الکترون
 const port = process.env.PORT ? Number(process.env.PORT) : 5173;
 
@@ -17,7 +15,13 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    runtimeErrorOverlay(),
+    ...(process.env.NODE_ENV !== 'production' && process.env.REPL_ID !== undefined
+      ? [
+          await import('@replit/vite-plugin-runtime-error-modal').then((m) =>
+            m.default(),
+          ),
+        ]
+      : []),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
