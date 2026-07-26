@@ -19,8 +19,9 @@ function createWindow() {
   if (process.env.NODE_ENV === "development") {
     mainWindow.loadURL("http://localhost:5173");
   } else {
+    // Vite outDir is dist/public (not dist/)
     mainWindow.loadFile(
-      path.join(__dirname, "../dist/index.html")
+      path.join(__dirname, "../dist/public/index.html")
     );
   }
 
