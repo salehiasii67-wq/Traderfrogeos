@@ -3,7 +3,11 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+<<<<<<< HEAD
 // تنظیم پورت
+=======
+// تنظیم پورت به‌صورت اختیاری با مقدار پیش‌فرض ۵۱۷۳ برای الکترون
+>>>>>>> 5d71346e18c74d69f2342c3937ed19a510d7e48a
 const port = process.env.PORT ? Number(process.env.PORT) : 5173;
 
 // مسیر مناسب برای Electron
@@ -14,7 +18,18 @@ export default defineConfig({
 
   plugins: [
     react(),
+<<<<<<< HEAD
 
+=======
+    tailwindcss(),
+    ...(process.env.NODE_ENV !== 'production' && process.env.REPL_ID !== undefined
+      ? [
+          await import('@replit/vite-plugin-runtime-error-modal').then((m) =>
+            m.default(),
+          ),
+        ]
+      : []),
+>>>>>>> 5d71346e18c74d69f2342c3937ed19a510d7e48a
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: "auto",
