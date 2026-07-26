@@ -1,6 +1,7 @@
 {
-  "name": "@workspace/tradermind",
+  "name": "tradermind",
   "version": "1.0.0",
+  "productName": "TraderMind",
   "private": true,
   "main": "electron/main.cjs",
   "type": "module",

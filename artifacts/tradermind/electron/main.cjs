@@ -19,15 +19,15 @@ function createWindow() {
   if (process.env.NODE_ENV === "development") {
     mainWindow.loadURL("http://localhost:5173");
   } else {
-    // Vite outDir is dist/public (not dist/)
     mainWindow.loadFile(
       path.join(__dirname, "../dist/public/index.html")
     );
   }
 
   mainWindow.removeMenu();
-}
 
+  mainWindow.webContents.openDevTools();
+}
 
 app.whenReady().then(() => {
   createWindow();
@@ -38,7 +38,6 @@ app.whenReady().then(() => {
     }
   });
 });
-
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
