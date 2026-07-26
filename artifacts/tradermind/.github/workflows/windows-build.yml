@@ -41,7 +41,7 @@ jobs:
 
       - name: Verify rollup native binary
         working-directory: artifacts/tradermind
-        run: node -e "try { require('@rollup/rollup-win32-x64-msvc'); console.log('OK: rollup native binary resolved'); } catch(e) { console.log('MISSING:', e.message); }"
+        run: node -e "try { require('@rollup/rollup-win32-x64-msvc'); console.log('OK'); } catch(e) { console.log('MISSING:', e.message); }"
 
       - name: Build Windows App
         working-directory: artifacts/tradermind
