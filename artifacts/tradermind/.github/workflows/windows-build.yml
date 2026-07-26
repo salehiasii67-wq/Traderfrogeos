@@ -37,18 +37,17 @@ jobs:
         run: pnpm install --no-frozen-lockfile --force
 
       - name: Install Windows native binaries
-        working-directory: artifacts/tradermind
         run: |
-          pnpm add -D @rollup/rollup-win32-x64-msvc
-          pnpm add -D lightningcss-win32-x64-msvc
-          pnpm add -D @tailwindcss/oxide-win32-x64-msvc
+          pnpm add -D -w @rollup/rollup-win32-x64-msvc
+          pnpm add -D -w lightningcss-win32-x64-msvc
+          pnpm add -D -w @tailwindcss/oxide-win32-x64-msvc
 
       - name: Build Windows App
         working-directory: artifacts/tradermind
         run: pnpm electron:build
         env:
           PORT: "23583"
-          BASE_PATH: "/"
+          BASE_PATH: "./"
 
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
