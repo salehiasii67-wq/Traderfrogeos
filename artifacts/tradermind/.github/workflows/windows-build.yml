@@ -33,15 +33,18 @@ jobs:
           node -v
           pnpm -v
 
+      - name: Remove win32 exclusion overrides for Windows build
+        shell: bash
+        run: |
+          sed -i '/rollup-win32/d' pnpm-workspace.yaml
+          sed -i '/oxide-win32/d' pnpm-workspace.yaml
+          sed -i '/lightningcss-win32/d' pnpm-workspace.yaml
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile --force
 
       - name: Install Windows native binaries
         run: pnpm --filter tradermind add -D @rollup/rollup-win32-x64-msvc lightningcss-win32-x64-msvc @tailwindcss/oxide-win32-x64-msvc
-
-      - name: Verify rollup native binary
-        working-directory: artifacts/tradermind
-        run: node -e "try { require('@rollup/rollup-win32-x64-msvc'); console.log('OK'); } catch(e) { console.log('MISSING:', e.message); }"
 
       - name: Build Windows App
         working-directory: artifacts/tradermind
