@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -25,7 +26,12 @@ jobs:
           cache: pnpm
 
       - name: Install Dependencies
-        run: pnpm install --no-frozen-lockfile --shamefully-hoist
+        run: |
+          pnpm install --no-frozen-lockfile --shamefully-hoist
+          pnpm approve-builds -r || true
+
+      - name: Rebuild Rollup Native Package
+        run: pnpm add -D @rollup/rollup-win32-x64-msvc --force
 
       - name: Build Electron App
         run: pnpm --filter ./artifacts/tradermind electron:build
