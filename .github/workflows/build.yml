@@ -1,4 +1,4 @@
-concurrency: name: Windows Build
+name: Build Electron App
 
 on:
   push:
@@ -7,12 +7,17 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-windows:
+  build:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -20,33 +25,13 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
+      - name: Install Dependencies
+        run: |
+          pnpm install --no-frozen-lockfile --shamefully-hoist
+          pnpm approve-builds -r || true
 
-      - name: Enable Corepack
-        run: corepack enable
+      - name: Rebuild Rollup Native Package
+        run: pnpm add -D @rollup/rollup-win32-x64-msvc --force
 
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile --shamefully-hoist --ignore-scripts=false
-
-      - name: Approve build scripts
-        run: pnpm approve-builds
-
-      - name: Rebuild esbuild
-        run: pnpm rebuild esbuild
-
-      - name: Build Vite
-        run: pnpm run build
-
-      - name: Build Electron
-        run: pnpm electron:build
-
-      - name: Upload Windows EXE
-        uses: actions/upload-artifact@v4
-        with:
-          name: TraderMind-Windows
-          path: |
-            dist/**
-            release/**
+      - name: Build Electron App
+        run: pnpm --filter ./artifacts/tradermind electron:build
