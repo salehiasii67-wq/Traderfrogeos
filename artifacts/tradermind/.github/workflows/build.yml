@@ -1,59 +1,52 @@
-name: Build TraderMind Android APK
+name: Windows Build
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
-  android-build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+  build-windows:
+    runs-on: windows-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          distribution: temurin
-          java-version: 21
+          node-version: 20
+          cache: pnpm
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.15.1
+          version: 10
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: pnpm
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --no-frozen-lockfile --shamefully-hoist --ignore-scripts=false
 
-      - name: Build TraderMind
-        working-directory: artifacts/tradermind
-        run: pnpm build
-        env:
-          PORT: "23583"
-          BASE_PATH: "/"
+      - name: Approve build scripts
+        run: pnpm approve-builds
 
-      - name: Capacitor Sync
-        working-directory: artifacts/tradermind
-        run: npx cap sync android
+      - name: Rebuild esbuild
+        run: pnpm rebuild esbuild
 
-      - name: Build APK
-        working-directory: artifacts/tradermind/android
-        run: ./gradlew assembleDebug
+      - name: Build Vite
+        run: pnpm run build
 
-      - name: Upload APK
+      - name: Build Electron
+        run: pnpm electron:build
+
+      - name: Upload Windows EXE
         uses: actions/upload-artifact@v4
         with:
-          name: TraderMind-debug-apk
-          path: artifacts/tradermind/android/app/build/outputs/apk/debug/app-debug.apk
+          name: TraderMind-Windows
+          path: |
+            dist/**
+            release/**
