@@ -2,11 +2,9 @@ import path from "path";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
-
-import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import tailwindcss from "@tailwindcss/vite";
 
 const port = process.env.PORT ? Number(process.env.PORT) : 5173;
-
 const basePath = process.env.BASE_PATH || "./";
 
 export default defineConfig({
@@ -14,41 +12,24 @@ export default defineConfig({
 
   plugins: [
     react(),
-    runtimeErrorOverlay(),
-
+    tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: "auto",
-
-      includeAssets: [
-        "icons/icon.svg",
-        "favicon.svg",
-        "robots.txt",
-      ],
-
+      includeAssets: ["icons/icon.svg", "favicon.svg", "robots.txt"],
       manifest: {
         name: "TraderMind — ژورنال معامله‌گر",
         short_name: "تریدرمایند",
-        description:
-          "ابزار حرفه‌ای برای ثبت معاملات، تحلیل استراتژی و ژورنال روزانه معامله‌گر",
-
+        description: "ابزار حرفه‌ای برای ثبت معاملات، تحلیل استراتژی و ژورنال روزانه معامله‌گر",
         theme_color: "#0f172a",
         background_color: "#0f172a",
-
         display: "standalone",
         orientation: "portrait-primary",
-
         start_url: "./",
         id: "com.tradermind.app",
-
         lang: "fa",
         dir: "rtl",
-
-        categories: [
-          "finance",
-          "productivity",
-        ],
-
+        categories: ["finance", "productivity"],
         icons: [
           {
             src: "icons/icon.svg",
@@ -58,109 +39,57 @@ export default defineConfig({
           },
         ],
       },
-
       workbox: {
-        globPatterns: [
-          "**/*.{js,css,html,ico,png,svg,woff2,webp}",
-        ],
-
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,webp}"],
         navigateFallback: "index.html",
         cleanupOutdatedCaches: true,
-
         runtimeCaching: [
           {
-            urlPattern:
-              /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
-
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
             handler: "CacheFirst",
-
             options: {
               cacheName: "tradermind-fonts",
-
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds:
-                  60 * 60 * 24 * 365,
-              },
-
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
             },
           },
         ],
       },
-
-      devOptions: {
-        enabled: false,
-        type: "module",
-      },
+      devOptions: { enabled: false, type: "module" },
     }),
   ],
 
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
-
-      "@assets": path.resolve(
-        import.meta.dirname,
-        "..",
-        "..",
-        "attached_assets",
-      ),
+      "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
     },
-
-    dedupe: [
-      "react",
-      "react-dom",
-    ],
+    dedupe: ["react", "react-dom"],
   },
 
   root: path.resolve(import.meta.dirname),
 
   esbuild: {
     drop: ["debugger"],
-
     ...(process.env.NODE_ENV === "production"
-      ? {
-          pure: [
-            "console.log",
-            "console.debug",
-            "console.info",
-          ],
-        }
+      ? { pure: ["console.log", "console.debug", "console.info"] }
       : {}),
   },
 
   build: {
-    outDir: path.resolve(
-      import.meta.dirname,
-      "dist",
-    ),
-
+    outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
-
     rollupOptions: {
       output: {
         manualChunks: {
-          "vendor-react": [
-            "react",
-            "react-dom",
-          ],
-
+          "vendor-react": ["react", "react-dom"],
           "vendor-ui": [
             "@radix-ui/react-dialog",
             "@radix-ui/react-select",
             "@radix-ui/react-switch",
           ],
-
-          "vendor-db": [
-            "dexie",
-          ],
-
-          "vendor-charts": [
-            "recharts",
-          ],
+          "vendor-db": ["dexie"],
+          "vendor-charts": ["recharts"],
         },
       },
     },
@@ -171,10 +100,7 @@ export default defineConfig({
     strictPort: true,
     host: "0.0.0.0",
     allowedHosts: true,
-
-    fs: {
-      strict: true,
-    },
+    fs: { strict: true },
   },
 
   preview: {

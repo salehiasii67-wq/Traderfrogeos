@@ -155,7 +155,6 @@
   * {
     @apply border-border;
     box-sizing: border-box;
-    /* جلوگیری از انتخاب اتفاقی متن روی موبایل در عناصر تعاملی */
     -webkit-tap-highlight-color: transparent;
   }
   html,
@@ -167,12 +166,10 @@
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    /* جلوگیری از over-scroll در iOS */
     overscroll-behavior: none;
     overflow-x: hidden;
   }
 
-  /* ── Scrollbar سفارشی — فقط دسکتاپ */
   @media (min-width: 768px) {
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -181,14 +178,12 @@
   }
 }
 
-/* ── Touch-Friendly: حداقل اندازه لمس ۴۴px برای iOS HIG ── */
 @layer utilities {
   .touch-target {
     min-height: 44px;
     min-width: 44px;
   }
 
-  /* Safe area برای notch و Dynamic Island */
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
@@ -196,14 +191,12 @@
     padding-top: env(safe-area-inset-top, 0px);
   }
 
-  /* Scroll snap برای کارت‌های موبایل */
   .snap-x-mandatory {
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
   }
   .snap-start { scroll-snap-align: start; }
 
-  /* انیمیشن ورود صفحه */
   .page-enter {
     animation: pageEnter 0.3s ease-out;
   }
@@ -212,7 +205,6 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  /* انیمیشن لرزش PIN اشتباه */
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
     15%       { transform: translateX(-8px); }
@@ -223,7 +215,6 @@
     90%       { transform: translateX(3px); }
   }
 
-  /* کارت‌های لمس‌پذیر */
   .card-pressable {
     transition: transform 0.1s ease, box-shadow 0.1s ease;
     cursor: pointer;
@@ -235,7 +226,6 @@
   }
 }
 
-/* ── حذف Autofill زرد در Chrome/Safari ── */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
@@ -244,13 +234,11 @@ input:-webkit-autofill:focus {
   transition: background-color 5000s ease-in-out 0s;
 }
 
-/* ── بهینه‌سازی تایپ‌اوگرافی موبایل ── */
 @media (max-width: 767px) {
   h1 { font-size: 1.5rem !important; }
   h2 { font-size: 1.25rem !important; }
 }
 
-/* ── جلوگیری از zoom روی input در iOS ── */
 @media (max-width: 767px) {
   input[type="text"],
   input[type="number"],
