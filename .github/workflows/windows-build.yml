@@ -30,8 +30,10 @@ jobs:
           pnpm install --no-frozen-lockfile --shamefully-hoist
           pnpm approve-builds -r || true
 
-      - name: Rebuild Rollup Native Package
-        run: pnpm add -D @rollup/rollup-win32-x64-msvc --force
+      - name: Fix Rollup Windows Binary
+        run: |
+          pnpm --dir artifacts/tradermind add -D @rollup/rollup-win32-x64-msvc --force
 
       - name: Build Electron App
-        run: pnpm --filter ./artifacts/tradermind electron:build
+        run: |
+          pnpm --filter ./artifacts/tradermind electron:build
