@@ -1,57 +1,35 @@
-name: Build TraderMind Windows
+             name: Build Electron App
 
-on:
-  push:
-    branches: ["main"]
-  workflow_dispatch:
+             on:
+               push:
+                 branches:
+                   - main
+               workflow_dispatch:
 
-permissions:
-  contents: read
+             jobs:
+               build:
+                 runs-on: windows-latest
 
-jobs:
-  windows-build:
-    runs-on: windows-latest
-    timeout-minutes: 30
+                 steps:
+                   - name: Checkout Repository
+                     uses: actions/checkout@v4
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+                   - name: Install pnpm
+                     uses: pnpm/action-setup@v4
+                     with:
+                       version: 10
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
+                   - name: Setup Node.js
+                     uses: actions/setup-node@v4
+                     with:
+                       node-version: 20
+                       cache: pnpm
 
-      - name: Enable Corepack
-        run: corepack enable
+                   - name: Install Dependencies
+                     run: |
+                       pnpm install --no-frozen-lockfile --shamefully-hoist
+                       pnpm approve-builds -r || true
 
-      - name: Setup pnpm
-        run: corepack prepare pnpm@10.15.1 --activate
-
-      - name: Check versions
-        run: |
-          node -v
-          pnpm -v
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile --force
-
-      - name: Install Windows native binaries
-        working-directory: artifacts/tradermind
-        run: |
-          pnpm add -D @rollup/rollup-win32-x64-msvc --ignore-workspace-root-check
-          pnpm add -D lightningcss-win32-x64-msvc --ignore-workspace-root-check
-          pnpm add -D @tailwindcss/oxide-win32-x64-msvc --ignore-workspace-root-check
-
-      - name: Build Windows App
-        working-directory: artifacts/tradermind
-        run: pnpm electron:build
-        env:
-          PORT: "23583"
-          BASE_PATH: "./"
-
-      - name: Upload Windows Installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: TraderMind-Windows
-          path: artifacts/tradermind/release/*
+                   - name: Build Electron App
+                     run: |
+                       pnpm --filter ./artifacts/tradermind electron:build
