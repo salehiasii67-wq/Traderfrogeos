@@ -17,44 +17,8 @@ jobs:
         with:
           node-version: 22
 
-<<<<<<< HEAD
       - name: Install pnpm
         uses: pnpm/action-setup@v3
-=======
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup pnpm
-        run: corepack prepare pnpm@10.15.1 --activate
-
-      - name: Check versions
-        run: |
-          node -v
-          pnpm -v
-
-      - name: Remove win32 exclusion overrides for Windows build
-        shell: bash
-        run: |
-          sed -i '/rollup-win32/d' pnpm-workspace.yaml
-          sed -i '/oxide-win32/d' pnpm-workspace.yaml
-          sed -i '/lightningcss-win32/d' pnpm-workspace.yaml
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile --force
-
-      - name: Install Windows native binaries
-        run: pnpm --filter tradermind add -D @rollup/rollup-win32-x64-msvc lightningcss-win32-x64-msvc @tailwindcss/oxide-win32-x64-msvc
-
-      - name: Build Windows App
-        working-directory: artifacts/tradermind
-        run: pnpm electron:build
-        env:
-          PORT: "23583"
-          BASE_PATH: "./"
-
-      - name: Upload Windows Installer
-        uses: actions/upload-artifact@v4
->>>>>>> 5d71346e18c74d69f2342c3937ed19a510d7e48a
         with:
           version: latest
           run_install: false
